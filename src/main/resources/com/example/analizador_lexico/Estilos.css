@@ -1,0 +1,42 @@
+#txtarea {
+    -fx-control-inner-background: #333333; /* Puedes ajustar el color según tus preferencias */
+        -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+
+/* Cambia el fondo de la celda a gris oscuro */
+.table-row-cell {
+    -fx-background-color: #333333;
+}
+
+/* Cambia el color del texto en la celda para que sea legible en el fondo oscuro */
+.table-row-cell .table-cell {
+    -fx-text-fill: white;
+}
+#tblview {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+#clbcaracter {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+#cldcateg {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+#columna {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+#fila {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+#list {
+    -fx-background-color: #333333;
+    -fx-text-fill: white; /* Cambia el color del texto si es necesario para que sea legible en el fondo oscuro */
+}
+/* Cambia el color del texto del encabezado de la columna a blanco */
+.table-view .column-header .label {
+    -fx-text-fill: white;
+}

@@ -103,6 +103,9 @@ public class HelloController implements Initializable {
         int i=0;
         for(String a: partes){
             divide(a, i);
+            if(bandera_c){
+               errores.add("Error en cerrado de comillas");
+            }
             i++;
         }
         tblview.setItems(guarda);
@@ -137,41 +140,66 @@ public class HelloController implements Initializable {
         //pasar a la funcion para analizar las clases y funciones.
 
         //LLAMAR LA FUNCION PARA VERIFICAR LAS ESTRUCTURAS, CLASES Y FUNCIONES:
-        estructura_anl();
+      //  estructura_anl();
 
 
         //errores
         list.getItems().addAll(errores);
     }
 
-    public void estructura(/*List<etiqueta> guarda*/){
+
+    public void estructura(/*List<etiqueta> guarda*/) {
         int i = 0;
         int j = 0;
-        int k=0;
-        int l=0;
+        int k = 0;
+        int l = 0;
+        int a = 0;
+        int b = 0;
+        int c=0;
         for (etiqueta etiqueta : guarda) {
-            if (etiqueta.getString().equals("{")) {
-                i++;
+            switch (etiqueta.getString()) {
+                case "{":
+                    i++;
+                    break;
+                case "}":
+                    j++;
+                    break;
+                case "(":
+                    k++;
+                    break;
+                case ")":
+                    l++;
+                    break;
+                case "[":
+                    a++;
+                    break;
+                case "]":
+                    b++;
+                    break;
+                case "for": if(reviewFor(guarda, c)){
+                    errores.add("For mal declarado");
+                }
+                    break;
             }
-           else if (etiqueta.getString().equals("}")) {
-                j++;}
-           else if (etiqueta.getString().equals("(")) {
-                k++;}
-           else if (etiqueta.getString().equals(")")) {
-                l++;}
+            c++;
         }
-        if (i<j){
+        if (i < j) {
             errores.add("Error en abertura de llaves");
-        }  else if(i>j){errores.add("Error en cerrado de llaves");}
-        if (k<l){
+        } else if (i > j) {
+            errores.add("Error en cerrado de llaves");
+        }
+        if (k < l) {
             errores.add("Error en abertura de parentesis");
-        }  else if(k>l){errores.add("Error en cerrado de parentesis");}
-        //comen
-
-        //otro
-
+        } else if (k > l) {
+            errores.add("Error en cerrado de parentesis");
+        }
+        if (a < b) {
+            errores.add("Error en abertura de corchetes");
+        } else if (b > a) {
+            errores.add("Error en cerrado de corchetes");
+        }
     }
-    public void estructura_anl() {//------------------------- N
+  /*  public void estructura_anl() {//------------------------- N
         //RECORRER EN LA LISTA DE CATEGORIAS PARA ENCONTRAR UN CLASS CLASE
         while (indice < categoria.toArray().length) {
             System.out.println("inicio");
@@ -369,7 +397,7 @@ public class HelloController implements Initializable {
 
 
     }
-
+*/
     public void divide(String texto, int i){
        String[] partes = texto.split("\\s+|(?<=[a-zA-ZáéíóúÁÉÍÓÚ])(?=[^a-zA-ZáéíóúÁÉÍÓÚ\\d])|(?<=[^a-zA-ZáéíóúÁÉÍÓÚ\\d])(?=[a-zA-ZáéíóúÁÉÍÓÚ])|(?<=[^\\d])(?=\\d)|(?<=\\d)(?=[^\\d])|(?<=[^()\\wáéíóúÁÉÍÓÚ])(?=[()])|(?<=[()])|\\n|(?<=[^\\wáéíóúÁÉÍÓÚ])(?<=[^\\wáéíóúÁÉÍÓÚ])");
        int l=0;
@@ -466,4 +494,298 @@ public class HelloController implements Initializable {
             }
         });
     }
+
+
+    //-------------------       Funciones añadidas
+    public boolean reviewFor(List<etiqueta> lista_expresiones, int i) {
+        String texto_error = "";
+        int estado = 0; // Auxiliar numérico para el análisis del ciclo
+
+        /* Recorrido de la lista de expresiones */
+        for (int j = i; j < lista_expresiones.size(); j++) {
+            /* Obtención de la expresión y su tipo (Reservada, Símbolo, Variable, etc.)*/
+            String expresion = lista_expresiones.get(j).getString();
+
+            String tipo_expresion = lista_expresiones.get(j).getEtiqueta();
+
+            if(lista_expresiones.get(j+1).getString().equals("=")&&tipo_expresion.equals("simbolo")){
+                expresion+="=";
+                j++;
+            }
+            if ((lista_expresiones.get(j+1).getString().equals("+") || lista_expresiones.get(j+1).getString().equals("-"))
+                    && expresion.equals(lista_expresiones.get(j+1).getString())) {
+                expresion += lista_expresiones.get(j+1).getString();
+                j++;
+            }
+
+            /* ANÁLISIS SINTÁCTICO DEL CICLO FOR */
+            switch (estado) {
+                case 0: {
+                    // Revisión de la palabra reservada "for"
+                    if (expresion.equals("for")) {
+                        estado = 1;
+                    } else {
+                        estado = -1;
+                    }
+                    break;
+                }
+                case 1: {
+                    // Revisión del paréntesis de apertura después de la palabra "for"
+                    if (expresion.equals("(")) {
+                        estado = 2;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba un paréntesis de apertura '('.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                /* 1. SENTENCIA DE DECLARACIÓN */
+                case 2: {
+                    // Revisión del tipo de variable a declarar (int, float o double)
+                    if (expresion.matches("^(int|float|double|char)")) {
+                        estado = 3;
+                    } else {
+                        if (tipo_expresion.equals("variable")) {
+                            estado = 4;
+                        } else {
+                            estado = -1;
+                            texto_error = "Tipo de dato " + expresion + " no válido en la declaración.";
+                            errores.add(texto_error);
+                        }
+                    }
+                    break;
+                }
+                case 3: {
+                    // Revisión del nombre de la variable a declarar
+                    if (tipo_expresion.equals("variable")) {
+                        estado = 4;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba nombre de variable.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 4: {
+                    // Revisión del operador de asignación '='
+                    if (expresion.equals("=")) {
+                        estado = 5;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba operador de asignación '='.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 5: {
+                    // Revisión de la expresión después del operador de asignación (Valor numérico o variable)
+                    if (tipo_expresion.equals("numero") || tipo_expresion.equals("variable")) {
+                        estado = 6;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba una expresión válida.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 6: {
+                    // Revisión del punto y coma para terminar la sentencia de declaración
+                    if (expresion.equals(";")) {
+                        estado = 7;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba ';'";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+
+                /* 2. SENTENCIA DE CONDICIÓN */
+                case 7: {
+                    // Revisión de la primera expresión en la condición de tope (Valor o variable)
+                    if (tipo_expresion.equals("numero") || tipo_expresion.equals("variable")) {
+                        estado = 8;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba una expresión válida.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 8: {
+                    // Revisión del operador relacional
+                    if (expresion.matches("(!=|==|<|<=|>|>=)")) {
+                        estado = 9;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba un operador de comparación válido.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 9: {
+                    // Revisión de la segunda expresión en la condición de tope (Valor o variable)
+                    if (tipo_expresion.equals("numero") || tipo_expresion.equals("variable")) {
+                        estado = 10;
+                    } else {
+                        System.out.println(tipo_expresion);
+                        estado = -1;
+                        texto_error = "Se esperaba una expresión válida.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 10: {
+                    // Revisión del punto y coma para terminar la sentencia de condición
+                    if (expresion.equals(";")) {
+                        estado = 11;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba ';'.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+
+                /* 3. SENTENCIA DE SALTO */
+                case 11: {
+                    // Revisión del nombre de la variable de salto
+                    if (tipo_expresion.equals("variable")) {
+                        estado = 12;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba nombre de variable.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 12: {
+                    /* OPERADORES VÁLIDOS DESPUÉS DE VARIABLE DE SALTO */
+                    // Revisión de símbolos ++ o --
+                    if (expresion.matches("(\\+\\+|--)")) {
+                        estado = 13;
+                    }
+                    // Revisión de operador de asignación '='
+                    else {
+                        if (expresion.matches("=")) {
+                            estado = 14;
+                        }
+                        // Revisión de otros operadores de asignación válidos
+                        else {
+                            if (expresion.matches("(\\+=|-=|\\*=|/=)")) {
+                                estado = 16;
+                            } else {
+                                estado = -1;
+                                texto_error = "Se esperaba un operador válido.";
+                                errores.add(texto_error);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 13: {
+                    // Revisión de paréntesis de cierre ')'
+                    if (expresion.equals(")")) {
+                        estado = 17;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba cierre de paréntesis ')'.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 14: {
+                    // Revisión de expresión después del operador de asignación '=' (Variable o valor numérico)
+                    if (tipo_expresion.matches("variable") | tipo_expresion.equals("numero")) {
+                        estado = 15;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba nombre de variable.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 15: {
+                    // Revisión de operador aritmético después de la expresión
+                    if (expresion.matches("(\\+|-|\\*|/)")) {
+                        estado = 16;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba un operador válido.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 16: {
+                    // Revisión de expresión después del operador aritmético
+                    if (tipo_expresion.equals("variable") | tipo_expresion.equals("numero")) {
+                        estado = 13;
+                    } else {
+                        estado = -1;
+                        texto_error = "Se esperaba una expresión válida.";
+                        errores.add(texto_error);
+                    }
+                    break;
+                }
+                case 17: {
+                    // Estado final correcto
+                    System.out.println("El ciclo For está bien.");
+                    //int saltos_palabra = j;
+                    return false;
+                }
+                case -1: {
+                    // Caso de error (Generación de mensaje de error)
+                    String numLinea = String.valueOf(lista_expresiones.get(j - 1).getFila());
+                    String numColumna = String.valueOf(lista_expresiones.get(j - 1).getColmna());
+
+                    texto_error = "Línea " + numLinea + ", Columna " + numColumna + "\n" + texto_error;
+                    errores.add(texto_error);
+                    System.out.println("ERROR.\nExiste un error en la declaración del ciclo.");
+                   // saltos_palabra = j;
+                    return true;
+                }
+            }
+        }
+        // Analiza si el ciclo for se declaró en su totalidad
+        if (estado != 17) {
+            texto_error = "La declaración del ciclo For está incompleta";
+            return true;
+        }
+        return false;
+    }
+   /* private void validarExpresiones(String linea, int numeroLinea, StringBuilder output) {
+        String[] operadoresAritmeticos = {"+", "-", "*", "/", "%"};
+        String[] operadoresLogicos = {"&&", "||", "!", "<", ">", "<=", ">=", "==", "!="};
+
+        // Validar operaciones aritméticas
+        for (String operador : operadoresAritmeticos) {
+            if (linea.contains(operador)) {
+                String[] tokens = linea.split("\\b" + Pattern.quote(operador) + "\\b");
+                if (tokens.length > 1) {
+                    for (int i = 0; i < tokens.length - 1; i++) {
+                        output.append("Tipo: ").append("OPERACION_ARITMETICA | Valor: ").append(tokens[i].trim()).append(" | Línea: ").append(numeroLinea).append("\n");
+                        output.append("Tipo: ").append("OPERADOR_ARITMETICO | Valor: ").append(operador).append(" | Línea: ").append(numeroLinea).append("\n");
+                    }
+                    output.append("Tipo: ").append("OPERACION_ARITMETICA | Valor: ").append(tokens[tokens.length - 1].trim()).append(" | Línea: ").append(numeroLinea).append("\n");
+                }
+            }
+        }
+        // Validar operaciones lógicas
+        for (String operador : operadoresLogicos) {
+            if (linea.contains(operador)) {
+                String[] tokens = linea.split("\\b" + Pattern.quote(operador) + "\\b");
+                if (tokens.length > 1) {
+                    for (int i = 0; i < tokens.length - 1; i++) {
+                        output.append("Tipo: ").append("OPERACION_LOGICA | Valor: ").append(tokens[i].trim()).append(" | Línea: ").append(numeroLinea).append("\n");
+                        output.append("Tipo: ").append("OPERADOR_LOGICO | Valor: ").append(operador).append(" | Línea: ").append(numeroLinea).append("\n");
+                    }
+                    output.append("Tipo: ").append("OPERACION_LOGICA | Valor: ").append(tokens[tokens.length - 1].trim()).append(" | Línea: ").append(numeroLinea).append("\n");
+                }
+            }
+        }
+    }
+
+    */
+
 }
